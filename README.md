@@ -1,26 +1,28 @@
-# DAQ2630 Cuisine — V1
+# DAQ2630 Cuisine — V2 graphique
 
-Prototype fonctionnel du livre de recettes pédagogique.
+Version fonctionnelle rapprochée de la maquette validée.
 
 ## Inclus
-- Catalogue responsive PC/mobile
-- Fiche prototype « Velouté de butternut »
+- Identité noire + bleu DAQ
+- Logos officiels fournis
+- Catalogue responsive
+- Vue livre de chef
+- Fiche Velouté de butternut
+- Ustensiles
+- Chef Sophie
 - 9 étapes interactives
-- Aides pédagogiques Chef Sophie
-- Minuteur 30 min
+- Aides « Je ne sais pas faire »
+- Minuteur pause/reprise/remise à zéro
 - Liste de courses V1
 - Convertisseur L/cL/mL et kg/g/mg
-- Logos officiels fournis par le porteur du projet
-- Maquette graphique de référence dans `public/maquette-reference-v1.png`
+- Responsive PC / tablette / mobile
+
+## GitHub / Vercel
+Remplacez le contenu de la V1 par celui de ce dossier, puis committez. Vercel redéploiera automatiquement.
 
 ## Lancer localement
-```bash
 npm install
 npm run dev
-```
 
-## Déployer sur Vercel
-Importer ce dépôt GitHub dans Vercel. Framework : Vite. Build : `npm run build`. Output : `dist`.
-
-## Étape suivante
-Brancher Supabase (recettes, catégories, ingrédients, étapes, photos, brouillons/publication) puis créer l'administration et l'assistant Chef Sophie.
+## Prochaine étape
+Supabase : recettes, catégories, ingrédients, étapes, photos, brouillons/publication et administration.
