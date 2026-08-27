@@ -39,7 +39,7 @@ function normalizeRecipe(row:any,ings:any[],steps:any[]){
  };
 }
 
-function App(){const[page,setPage]=useState('home'),[step,setStep]=useState(0),[help,setHelp]=useState(false),[sec,setSec]=useState(1800),[run,setRun]=useState(false),[search,setSearch]=useState(''),[amount,setAmount]=useState('1'),[from,setFrom]=useState('L'),[to,setTo]=useState('mL'),[recipe,setRecipe]=useState(fallbackRecipe),[dbState,setDbState]=useState('connexion…');
+function App(){const[page,setPage]=useState('home'),[step,setStep]=useState(0),[help,setHelp]=useState(false),[sec,setSec]=useState(1800),[run,setRun]=useState(false),[search,setSearch]=useState(''),[amount,setAmount]=useState('1'),[from,setFrom]=useState('L'),[to,setTo]=useState('mL'),[recipe,setRecipe]=useState(fallbackRecipe),[dbState,setDbState]=useState('connexion…'),[adminUser,setAdminUser]=useState<any>(null),[adminRole,setAdminRole]=useState(false),[adminLoading,setAdminLoading]=useState(true),[adminEmail,setAdminEmail]=useState(''),[adminPassword,setAdminPassword]=useState(''),[adminError,setAdminError]=useState(''),[adminRecipes,setAdminRecipes]=useState<any[]>([]);
 useEffect(()=>{if(!run)return;const id=setInterval(()=>setSec(s=>s>0?s-1:0),1000);return()=>clearInterval(id)},[run]);useEffect(()=>{if(!supabase){setDbState('mode local');return;}let live=true;(async()=>{try{
  const {data:r,error:re}=await supabase.from('recipes').select('*,category:categories(name)').eq('slug','veloute-de-butternut').eq('status','published').single();
  if(re)throw re;
@@ -50,6 +50,45 @@ useEffect(()=>{if(!run)return;const id=setInterval(()=>setSec(s=>s>0?s-1:0),1000
  if(ie)throw ie;if(se)throw se;
  if(live){setRecipe(normalizeRecipe(r,ings||[],steps||[]));setDbState('Supabase connecté');}
  }catch(e){console.error(e);if(live)setDbState('mode local — vérifier Supabase');}})();return()=>{live=false}},[]);
+
+useEffect(()=>{if(!supabase){setAdminLoading(false);return;}let mounted=true;(async()=>{
+ const {data:{session}}=await supabase.auth.getSession();
+ if(!mounted)return;
+ if(session?.user){
+   const {data:p}=await supabase.from('profiles').select('role').eq('id',session.user.id).single();
+   if(p?.role==='admin'){setAdminUser(session.user);setAdminRole(true);await loadAdminRecipes();}
+ }
+ setAdminLoading(false);
+})();const {data:sub}=supabase.auth.onAuthStateChange(async(_e,session)=>{
+ if(session?.user){
+   const {data:p}=await supabase.from('profiles').select('role').eq('id',session.user.id).single();
+   if(p?.role==='admin'){setAdminUser(session.user);setAdminRole(true);await loadAdminRecipes();}
+   else{setAdminRole(false);setAdminUser(null);}
+ }else{setAdminRole(false);setAdminUser(null);}
+});return()=>{mounted=false;sub.subscription.unsubscribe()}},[]);
+
+async function loadAdminRecipes(){
+ if(!supabase)return;
+ const {data,error}=await supabase.from('recipes').select('id,title,slug,status,updated_at').order('updated_at',{ascending:false});
+ if(!error)setAdminRecipes(data||[]);
+}
+async function adminLogin(e:any){
+ e.preventDefault();setAdminError('');
+ if(!supabase){setAdminError('Connexion Supabase indisponible.');return;}
+ const {data,error}=await supabase.auth.signInWithPassword({email:adminEmail,password:adminPassword});
+ if(error){setAdminError('Identifiants incorrects.');return;}
+ const {data:p}=await supabase.from('profiles').select('role').eq('id',data.user.id).single();
+ if(p?.role!=='admin'){await supabase.auth.signOut();setAdminError('Ce compte n’est pas administrateur.');return;}
+ setAdminUser(data.user);setAdminRole(true);await loadAdminRecipes();
+}
+async function adminLogout(){if(supabase)await supabase.auth.signOut();setAdminUser(null);setAdminRole(false);}
+const isAdminPath=window.location.pathname.startsWith('/admin');
+if(isAdminPath){
+ if(adminLoading)return <main className="adminGate"><div className="adminCard"><div className="adminLogo"><img src="/daq2630-logo.png"/><img src="/online-formapro-logo.png"/></div><h1>Administration</h1><p>Chargement…</p></div></main>;
+ if(!adminRole)return <main className="adminGate"><form className="adminCard" onSubmit={adminLogin}><div className="adminLogo"><img src="/daq2630-logo.png"/><img src="/online-formapro-logo.png"/></div><span className="kicker">ESPACE SÉCURISÉ</span><h1>Administration</h1><p>Connectez-vous avec votre compte administrateur DAQ2630 Cuisine.</p><label>E-mail<input type="email" value={adminEmail} onChange={e=>setAdminEmail(e.target.value)} required/></label><label>Mot de passe<input type="password" value={adminPassword} onChange={e=>setAdminPassword(e.target.value)} required/></label>{adminError&&<div className="adminError">{adminError}</div>}<button className="blue big" type="submit">SE CONNECTER</button><a href="/">← Retour au site</a></form></main>;
+ return <main className="adminShell"><aside className="adminSide"><div className="brand"><img src="/daq2630-logo.png"/><img src="/online-formapro-logo.png"/></div><b>Administration</b><button className="nav active"><BookOpen size={18}/><span>Recettes</span></button><button className="nav"><Wrench size={18}/><span>Ustensiles</span></button><button className="nav"><Scale size={18}/><span>Techniques</span></button><button className="nav"><Settings size={18}/><span>Réglages</span></button><button className="nav bottom" onClick={adminLogout}>Se déconnecter</button></aside><section className="adminMain"><div className="adminHeader"><div><span className="kicker">DAQ2630 CUISINE</span><h1>Tableau de bord</h1><p>Gestion des recettes et du contenu du site.</p></div><div className="adminUser">{adminUser?.email}</div></div><div className="adminStats"><div><strong>{adminRecipes.length}</strong><span>Recettes</span></div><div><strong>{adminRecipes.filter(r=>r.status==='published').length}</strong><span>Publiées</span></div><div><strong>{adminRecipes.filter(r=>r.status==='draft').length}</strong><span>Brouillons</span></div></div><div className="adminToolbar"><h2>Recettes</h2><button className="blue">+ Nouvelle recette</button></div><div className="adminTable">{adminRecipes.map(r=><div className="adminRow" key={r.id}><div><b>{r.title}</b><small>/{r.slug}</small></div><span className={'status '+r.status}>{r.status==='published'?'Publiée':'Brouillon'}</span><button className="outline">Modifier</button></div>)}</div><div className="adminNote"><b>V4 Admin</b><p>La connexion et le tableau de bord sont opérationnels. L’édition complète, les photos et Supabase Storage seront ajoutés à l’étape suivante.</p></div></section></main>;
+}
+
 const nav=(p,l,I)=><button className={'nav '+(page===p?'active':'')} onClick={()=>setPage(p)}><I size={18}/><span>{l}</span></button>;
 const convert=()=>{const v=Number(amount)||0,u={L:1000,cL:10,mL:1,kg:1000,g:1,mg:.001},vol=['L','cL','mL'],mass=['kg','g','mg'];if((vol.includes(from)&&vol.includes(to))||(mass.includes(from)&&mass.includes(to)))return (v*u[from]/u[to]).toLocaleString('fr-FR')+' '+to;return '—'};
 if(page==='cook'){const s=recipe.steps[step];return <main className="cook"><header><button onClick={()=>setPage('recipe')}><ChevronLeft/></button><b>Étape {step+1} / 9</b><div className="progress"><i style={{width:(step+1)/9*100+'%'}}/></div><Clock size={18}/><span>{run?Math.floor(sec/60)+':'+String(sec%60).padStart(2,'0'):'12:00'}</span></header><section><img className="cookImg" src="/butternut.png"/><div className="cookText"><span className="kicker">ÉTAPE {step+1}</span><h1>{s.title}</h1><p>{s.text}</p>{s.help&&<><button className="outline" onClick={()=>setHelp(!help)}>👩‍🍳 JE NE SAIS PAS FAIRE</button>{help&&<div className="tip"><img src="/chef-sophie.png"/><div><b>Astuce de Chef Sophie</b><p>{s.help}</p></div></div>}</>}{s.timer&&<div className="timer"><Clock/><div><small>MINUTEUR</small><strong>{String(Math.floor(sec/60)).padStart(2,'0')}:{String(sec%60).padStart(2,'0')}</strong></div><button onClick={()=>setRun(!run)}>{run?<Pause/>:<Play/>}</button><button onClick={()=>{setRun(false);setSec(1800)}}><Square/></button></div>}</div></section><footer><button disabled={!step} onClick={()=>{setStep(step-1);setHelp(false)}}><ChevronLeft/> Étape précédente</button>{step<8?<button className="blue" onClick={()=>{setStep(step+1);setHelp(false)}}>Étape suivante <ChevronRight/></button>:<button className="blue" onClick={()=>setPage('home')}>Recette terminée</button>}</footer></main>}
