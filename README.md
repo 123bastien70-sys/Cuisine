@@ -1,28 +1,25 @@
-# DAQ2630 Cuisine — V2 graphique
+# DAQ2630 Cuisine — V3 Supabase
 
-Version fonctionnelle rapprochée de la maquette validée.
+Cette version connecte le prototype à Supabase.
 
-## Inclus
-- Identité noire + bleu DAQ
-- Logos officiels fournis
-- Catalogue responsive
-- Vue livre de chef
-- Fiche Velouté de butternut
-- Ustensiles
-- Chef Sophie
-- 9 étapes interactives
-- Aides « Je ne sais pas faire »
-- Minuteur pause/reprise/remise à zéro
-- Liste de courses V1
-- Convertisseur L/cL/mL et kg/g/mg
-- Responsive PC / tablette / mobile
+## Ce qui change
+- lecture de `recipes`
+- lecture des ingrédients via `recipe_ingredients`
+- lecture des 9 étapes via `recipe_steps`
+- fallback local si Supabase n'est pas joignable
+- indicateur visuel `Supabase connecté`
 
-## GitHub / Vercel
-Remplacez le contenu de la V1 par celui de ce dossier, puis committez. Vercel redéploiera automatiquement.
+## Variables Vercel requises
+- `VITE_SUPABASE_URL`
+- `VITE_SUPABASE_ANON_KEY`
 
-## Lancer localement
-npm install
-npm run dev
+## Mise en ligne
+Remplacez les fichiers du dépôt GitHub par ceux de cette V3 puis faites un commit.
+Vercel redéploiera automatiquement.
+
+## Test
+Sur la page Catalogue, l'indicateur doit afficher `Supabase connecté`.
+Ensuite, modifier un champ de la recette dans Supabase permettra de vérifier que le site lit bien la base après actualisation.
 
 ## Prochaine étape
-Supabase : recettes, catégories, ingrédients, étapes, photos, brouillons/publication et administration.
+Espace Admin + Supabase Auth + Supabase Storage pour gérer recettes et photos.
